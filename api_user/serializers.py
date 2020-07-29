@@ -6,3 +6,5 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = '__all__'
         # 모델 User의 모든 field를 serializer함.
+
+UserSerializer
