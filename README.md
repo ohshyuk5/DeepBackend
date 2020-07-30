@@ -4,7 +4,9 @@
 1. user
 
     POST    /user/              -> 유저 정보 저장
+
     GET     /user/{user_id}     -> 유저 정보 요청: 개발용 api
+    
     DELETE  /user/{user_id}     -> 유저 정보 삭제
 
 2. media
