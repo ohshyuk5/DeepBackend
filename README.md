@@ -12,7 +12,9 @@
 2. media
 
     POST    /media/             -> 합성 요청 (유저 id, 사진, 영상)
+
     GET     /media/{user_id}    -> 결과 영상 요청
+    
     DELETE  /media/{user_id}    -> 정보 삭제
 
 ## Flow
