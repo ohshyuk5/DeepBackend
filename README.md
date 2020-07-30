@@ -3,9 +3,8 @@
 ---
 1. user
 
-    POST    /user/              -> 유저 정보 저장(user_name, password, ...)
-    GET     /user/{user_id}     -> 유저 정보 요청(아마 삭제 예정)
-    PUT     /user/{user_id}     -> 저장된 유저 정보 변경
+    POST    /user/              -> 유저 정보 저장
+    GET     /user/{user_id}     -> 유저 정보 요청: 개발용 api
     DELETE  /user/{user_id}     -> 유저 정보 삭제
 
 2. media
