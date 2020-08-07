@@ -23,13 +23,17 @@ application = get_wsgi_application()
 ################
 # 파이어 베이스 연결
 ################
-
-
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from firebase_admin import storage
 
 cred = credentials.Certificate(os.environ.get('FIRESTORE_KEY'))
-firebase_admin.initialize_app(cred)
+
+app = firebase_admin.initialize_app(cred, {
+    'storageBucket': 'cs492-team-a.appspot.com'
+})
 
 db = firestore.client()
+
+bucket = storage.bucket(app=app)
