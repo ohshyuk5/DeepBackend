@@ -1,15 +1,21 @@
 django==2.2.13
 djangorestframework==3.11.0
+django-storages[google]
 gunicorn==20.0.4
 
 numpy==1.18.3
 tqdm==4.45.0
-seaborn==0.10.1
-matplotlib==3.2.1
-pandas==1.0.3
+seaborn
+matplotlib
+pandas==1.0.2
 torch 
 torchvision
 firebase-admin
 python-dotenv
 screen
-nginx
+# nginx
+
+google-api-core==1.17.0
+google-cloud-bigquery==1.23.0
+google-cloud-bigquery-storage==0.7.0
+google-cloud-storage==1.23.0
