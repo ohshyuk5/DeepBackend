@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import HttpResponse
 
 # Create your views here.
 from rest_framework.views import APIView
@@ -42,7 +43,7 @@ class UserView(APIView):
         ################################################
 
         json_data = {
-            'uid': data['uid']
+            'uid': uid
         }
         db_ptr = db.collection(u'users').document(uid)
         db_ptr.set({
@@ -55,19 +56,28 @@ class UserView(APIView):
     """
     GET /users
     GET /users/{user_id}
-    결과 요청
+    합성이 완료 되었는지 확인
     """
     def get(self, request, **kwargs):
-        # return Response("test get ok", status=200)
-        if kwargs.get('user_id') is None:
-            user_queryset = User.objects.all() #모든 User의 정보를 불러온다.
-            user_queryset_serializer = UserSerializer(user_queryset, many=True)
-            return Response(user_queryset_serializer.data, status=status.HTTP_200_OK)
+        # Read uid from req
+        uid = request.GET.get('uid')
+        print("uid: ", uid)
+        if uid == None:
+            return Response({'status': 'No uid'})
         else:
-            user_id = kwargs.get('user_id')
-            user_serializer = UserSerializer(User.objects.get(id=user_id)) #id에 해당하는 User의 정보를 불러온다
-            return Response(user_serializer.data, status=status.HTTP_200_OK)
- 
+            uid = str(uid)
+        # Read rid from req
+        rid = request.GET.get('rid')
+        print("rid: ", rid)
+        if rid == None:
+            return Response({'status': 'No rid'}, status=404)
+        else:
+            rid = str(rid)
+        
+        db_ptr = db.collection(u'users').document(uid).collection(u'rid').document(rid)
+        doc = db_ptr.get()
+
+        return Response(doc.to_dict(), status=200)
     # """
     # PUT /users/{user_id}
     # """
