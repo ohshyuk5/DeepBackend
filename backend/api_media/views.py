@@ -3,7 +3,10 @@ from django.db import models
 from django.http import FileResponse
 from django.http import HttpResponse
 
+
 # rest_framework
+from rest_framework.exceptions import ParseError
+from rest_framework.parsers import FileUploadParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,10 +16,12 @@ from google.cloud import storage
 import numpy as np
 import json
 import os
+import secrets
 import sys
 import subprocess
-
+import shutil
 from ..wsgi import db, bucket
+from ..background import main
 
 # Own
 # from ~ imort ~UL
@@ -48,81 +53,44 @@ class MediaView(APIView):
             data = json.loads(raw_data)
 
             self.uid = data['uid']
+            
+            # # Pick random # for rid
+            # rid = secrets.token_hex(15)
+            
+            # TODO: Check for duplicated rid in the DB
+            
+            # self.rid = str(rid)
+            
             self.rid = data['rid']
             self.src = data['src']
             self.dst = data['dst']
+
             self.result = data['result']
 
-            path_src = self.get_file(self.src)
-            path_dst = self.get_file(self.dst)
-            path_result = 'backend/storage/result/'
+            # path_src = self.get_file(self.src)
+            # path_dst = self.get_file(self.dst)
+            path_src = 'backend/storage/'+ self.rid + '/src/src.mp4'
+            path_dst = 'backend/storage/'+ self.rid + '/dst/dst.mp4'
+
+            path_result = 'backend/storage/' + self.rid + '/result/'
+            
+
+            if not os.path.isdir(path_result):
+                os.mkdir(path_result)
         # try:
         #     pass
         except:
             return Response({"status":"Failed reading files from the storage"}, status=status.HTTP_404_NOT_FOUND)
         
-        path = "~/Server/DeepBackend/"
+
+        db_ptr = db.collection(u'users').document(self.uid).collection(u'rid').document(self.rid)
+        db_ptr.set({
+            'status': 'ongoing'
+        })
+
+        # os.system('nohup python ~/Server/DeepBackend/backend/background.py -u ' + self.uid + ' -r ' + self.rid + ' -s ' + path_src + ' -d ' + path_dst + ' -o ' + path_result + ' -n ' + self.result + ' &')
         
-        path_src_abs = path + path_src
-        path_dst_abs = path + path_dst
-        path_result_abs = path + path_result
-
-        path_src_ext = 'backend/storage/ext/src'
-        path_dst_ext = 'backend/storage/ext/dst'
-
-        path_src_ext_abs = path + 'backend/storage/ext/src'
-        path_dst_ext_abs = path + 'backend/storage/ext/dst'
-
-        path_faceswap = path + 'backend/faceswap/faceswap.py'
-
-        path_model_abs = path + 'backend/models/' + self.result + '/'
-        print("forking")
-        pid  = os.fork()
-
-        if pid == 0:
-            sys.exit(0)
-            
-        os.waitpid(pid, 0)
-        # Extract face
-        # python faceswap.py extract -i ~/faceswap/src/trump -o ~/faceswap/faces/trump
-        try:
-            subprocess.run(['python ' + path_faceswap + ' extract -i ' + path_src_abs + ' -o ' + path_src_ext_abs], shell=True)
-            subprocess.rub(['python ' + path_faceswap + ' extract -i ' + path_dst_abs + ' -o ' + path_dst_ext_abs], shell=True)
-            # os.system('python ' + path_faceswap + ' extract -i ' + path_src_abs + ' -o ' + path_src_ext_abs)
-            # os.system('python ' + path_faceswap + ' extract -i ' + path_dst_abs + ' -o ' + path_dst_ext_abs)
-        except:
-            # TODO
-            return Response({"status":"Extracting Failed"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Train
-        # python faceswap.py train -A ~/faceswap/faces/trump -B ~/faceswap/faces/cage -m ~/faceswap/trump_cage_model/
-        try:
-            os.system('python ' + path_faceswap + ' train -A ' + path_src_ext_abs + ' -B ' + path_dst_ext_abs + ' -m ' + path_model_abs)
-        except:
-            # TODO
-            return Response({"status":"Training Failed"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-        # Convert
-        # python faceswap.py convert -i ~/faceswap/src/trump/ -o ~/faceswap/converted/ -m ~/faceswap/trump_cage_model/
-        try:
-            os.system('python ' + path_faceswap + ' convert -i ' + path_src_abs + ' -o ' + path_result_abs + ' -m ' + path_model_abs)
-        except:
-            # TODO
-            return Response({"status":"Converting Failed"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-        # Delete local files
-        if path_src is not None and os.path.isfile(path_src):
-                os.remove(path_src)
-        if path_dst is not None and os.path.isfile(path_dst):
-                os.remove(path_dst)
-        # if path_src_ext is not None and os.path.isfile(path_src):
-        #         os.remove(path_src)
-        # if path_dst_ext is not None and os.path.isfile(path_dst):
-        #         os.remove(path_dst)
-        
-        return Response({"status":"Success"}, status=200)
+        return Response({"status":"Success", "rid":self.rid}, status=200)
 
 
     """
@@ -130,24 +98,39 @@ class MediaView(APIView):
     GET /media/{user_id}/{req_id}    # Get result with (user_id,req_id) pair
     """
     def get(self, request):
-        # name = request.GET.get('name')
-        # print(name)
         try:
             uid = str(request.GET.get('uid'))
             rid = str(request.GET.get('rid'))
             req = str(request.GET.get('request'))
+            name = str(request.GET.get('name'))
+            filename = name + '.mp4'
 
-            filename = str(request.GET.get('filename'))
-
-            path_remote = 'users/' + uid + '/' + rid + '/' + req + '/' + filename
-            path_local = 'backend/storage/' + req + '/' + filename
+            self.result = None
+            
+            path = "~/Server/DeepBackend/"
+            path_remote = 'users/' + uid + '/' + name + '/' + req + '/' + filename
+            path_local = 'backend/storage/temp/' + filename
+            print("remote: ", path_remote)
+            print("local : ", path_local)
+            if not os.path.isdir('backend/storage/temp/'):
+                os.mkdir('backend/storage/temp/')
+            
+            
+            if req != 'result':
+                json_data = {
+                    'status': 'Only results are accessible'
+                }
+                return Response(json_data, status=status.HTTP_400_BAD_REQUEST)
+            
             
             # download file
             blob = bucket.get_blob(path_remote)
             # txt = blob.download_as_string()
             with open(path_local, "wb") as file_obj:
                 blob.download_to_file(file_obj)
-
+        
+        # try:
+        #     pass
         except:
             json_data = {
                 'status': 'Cannot find file with the given name'
@@ -156,11 +139,7 @@ class MediaView(APIView):
                 os.remove(path_local)
             return Response(json_data, status=status.HTTP_404_NOT_FOUND)
         
-        if req != 'result':
-            json_data = {
-                'status': 'Only results are accessible'
-            }
-            return Response(json_data, status=status.HTTP_400_BAD_REQUEST)
+        
 
         try:
             file = FileWrapper(open(path_local, 'rb'))
@@ -178,7 +157,7 @@ class MediaView(APIView):
                 "status": "Cannot send file to client",
             }
             return Response(json_response, status=status.HTTP_409_CONFLICT)
-        
+
 
     """
     Delete /media/{user_id}/{req_id}       # Delete all media sent
@@ -203,25 +182,35 @@ class MediaView(APIView):
 
     def get_file(self, filename):
         if self.src == filename:
-            name = "src/"
+            name = "src"
         else:
-            name = "dst/"
-        
+            name = "dst"
         uid = self.uid
         rid = self.rid
+        result = self.result
 
-        try:
-            path_remote = 'users/' + uid + '/' + rid + '/' + name + filename
-            path_local = 'backend/storage/' + name + filename
-            
-            # download file
-            blob = bucket.get_blob(path_remote)
-            with open(path_local, "wb") as file_obj:
-                blob.download_to_file(file_obj)
-            return path_local
+        path_remote = 'users/' + uid + '/' + result + '/' + name + '/' + filename
+        path_local = 'backend/storage/' + rid + '/' + name + '/' + name + '.mp4'
+        
+        if not os.path.isdir('backend/storage/' + rid + '/'):
+            os.mkdir('backend/storage/' + rid + '/')
+        if not os.path.isdir('backend/storage/' + rid + '/' + name + '/'):
+            os.mkdir('backend/storage/' + rid + '/' + name + '/')
+ 
+        # download file
+        blob = bucket.get_blob(path_remote)
+        with open(path_local, "wb") as file_obj:
+            blob.download_to_file(file_obj)
+        return path_local
 
-        except:
-            if path_local is not None and os.path.isfile(path_local):
-                os.remove(path_local)
-            return None
 
+
+class FileUploadView(APIView):
+    parser_classes = [FileUploadParser]
+
+    def put(self, request, filename, format=None):
+        file_obj = request.data['file']
+        # ...
+        # do some stuff with uploaded file
+        # ...
+        return Response(status=204)
