@@ -28,6 +28,7 @@ ALLOWED_HOSTS = ['*']
 INSTALLED_APPS = [ 
     'backend.api_user',
     'backend.api_media',
+    'backend.api_upload',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

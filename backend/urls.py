@@ -17,10 +17,14 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf.urls import url, include 
 
+from .api_upload.views import FileUploadView
+
 urlpatterns = [
     # path('.api/', include('backend.api.urls')),
     path('admin/', admin.site.urls),
     url(r'^api-auth/', include('rest_framework.urls')),
+    url(r'^upload/(?P<filename>[^/]+)$', FileUploadView.as_view()),
     path('users/', include('backend.api_user.urls'), name='api_user'), #include 함수를 통해 api_usr의 urls.py로 라우팅 해준다.
-    path('media/', include('backend.api_media.urls'), name='api_media')
+    path('media/', include('backend.api_media.urls'), name='api_media'),
+    path('upload/', include('backend.api_upload.urls'), name='api_upload')
 ]
