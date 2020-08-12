@@ -9,5 +9,6 @@ fire*
 storage.rules
 backend/storage
 nohup.out
+node_modules/
 
 
