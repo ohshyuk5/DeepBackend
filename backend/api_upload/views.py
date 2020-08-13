@@ -27,13 +27,23 @@ from ..wsgi import db, bucket
 
 class FileUploadView(APIView):
     parser_classes = [FileUploadParser]
-    
+    """
+    GET upload/
+    params: None
+
+    Get rid from the server (For direct upload case)
+    """
     def get(self, request):
 
         rid = str(secrets.token_hex(15))
 
         return Response({'status':'Success', 'rid':rid}, status=200)
+    """
+    PUT upload/
+    params: uid, rid, type
 
+    Upload a file to the server directly
+    """
     def put(self, request, filename, format=None):
         uid = str(request.GET.get('uid'))
         rid = str(request.GET.get('rid'))
