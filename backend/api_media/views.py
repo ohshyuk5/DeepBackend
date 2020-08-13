@@ -45,44 +45,53 @@ class Resume(models.Model):
 
 class MediaView(APIView):
     """
-    POST /media/     # Request syn service with photo and video also with user_id -> req_id returned
+    POST media/
+    Body: uid, rid, src, dst, result
+
+    Request synthesizing service with two videos
     """
     def post(self, request):
+
+        raw_data = request.body.decode('utf-8')
+        data = json.loads(raw_data)
+
+        self.uid = data['uid']
+        
+        # Pick random # for rid
+        rid = secrets.token_hex(15)
+        
+        # Check for duplicated rid in the DB
+        docs = db.collection(u'users').document(self.uid).collection(u'rid').stream()
+        
+        doc_list = []
+
+        for doc in docs:
+            doc_list.append(doc.id)
+
+        while rid in doc_list:
+            rid = secrets.token_hex(15)
+        
+        self.rid = str(rid)
+        # self.rid = data['rid']
+        self.src = data['src']
+        self.dst = data['dst']
+
+        self.result = data['result']
+
+        # Get src & dst files
         try:
-            raw_data = request.body.decode('utf-8')
-            data = json.loads(raw_data)
-
-            self.uid = data['uid']
-            
-            # # Pick random # for rid
-            # rid = secrets.token_hex(15)
-            
-            # TODO: Check for duplicated rid in the DB
-            
-            # self.rid = str(rid)
-            
-            self.rid = data['rid']
-            self.src = data['src']
-            self.dst = data['dst']
-
-            self.result = data['result']
-
-            # path_src = self.get_file(self.src)
-            # path_dst = self.get_file(self.dst)
-            path_src = 'backend/storage/'+ self.rid + '/src/src.mp4'
-            path_dst = 'backend/storage/'+ self.rid + '/dst/dst.mp4'
-
-            path_result = 'backend/storage/' + self.rid + '/result/'
-            
-
-            if not os.path.isdir(path_result):
-                os.mkdir(path_result)
-        # try:
-        #     pass
+            path_src = self.get_file(self.src)    # For Firebase storage
+            path_dst = self.get_file(self.dst)    # For Firebase storage
         except:
             return Response({"status":"Failed reading files from the storage"}, status=status.HTTP_404_NOT_FOUND)
-        
+        # path_src = 'backend/storage/'+ self.rid + '/src/src.mp4'    # For direct upload
+        # path_dst = 'backend/storage/'+ self.rid + '/dst/dst.mp4'    # For direct upload
 
+        # path_result = 'backend/storage/' + self.rid + '/result/'
+        # if not os.path.isdir(path_result):
+        #     os.mkdir(path_result)
+        
+        
         db_ptr = db.collection(u'users').document(self.uid).collection(u'rid').document(self.rid)
         db_ptr.set({
             'status': 'ongoing'
@@ -95,20 +104,22 @@ class MediaView(APIView):
 
     """
     GET /media
-    GET /media/{user_id}/{req_id}    # Get result with (user_id,req_id) pair
+    params: uid, rid, type, name
+
+    Get result with (user_id,req_id) pair
     """
     def get(self, request):
         try:
             uid = str(request.GET.get('uid'))
             rid = str(request.GET.get('rid'))
-            req = str(request.GET.get('request'))
+            typ = str(request.GET.get('type'))
             name = str(request.GET.get('name'))
             filename = name + '.mp4'
 
             self.result = None
             
             path = "~/Server/DeepBackend/"
-            path_remote = 'users/' + uid + '/' + name + '/' + req + '/' + filename
+            path_remote = 'users/' + uid + '/' + name + '/' + typ + '/' + filename
             path_local = 'backend/storage/temp/' + filename
             print("remote: ", path_remote)
             print("local : ", path_local)
@@ -116,7 +127,7 @@ class MediaView(APIView):
                 os.mkdir('backend/storage/temp/')
             
             
-            if req != 'result':
+            if typ != 'result':
                 json_data = {
                     'status': 'Only results are accessible'
                 }
@@ -162,22 +173,22 @@ class MediaView(APIView):
     """
     Delete /media/{user_id}/{req_id}       # Delete all media sent
     """
-    def delete(self, request):
-        try:
-            raw_data = request.body.decode('utf-8')
-            data = json.loads(raw_data)
+    # def delete(self, request):
+    #     try:
+    #         raw_data = request.body.decode('utf-8')
+    #         data = json.loads(raw_data)
 
-            uid = data['uid']
-            rid = data['rid']
-            request = data['request']
-            filename = data['filename']
+    #         uid = data['uid']
+    #         rid = data['rid']
+    #         request = data['request']
+    #         filename = data['filename']
 
-            path_remote = 'users/' + uid + '/' + rid + '/' + request + '/' + filename
-            blob = bucket.blob(path_remote)
-            blob.delete()
-        except:
-            return Response({"status":"Cannot delete"}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"status":"Deleted"}, status=200)
+    #         path_remote = 'users/' + uid + '/' + rid + '/' + request + '/' + filename
+    #         blob = bucket.blob(path_remote)
+    #         blob.delete()
+    #     except:
+    #         return Response({"status":"Cannot delete"}, status=status.HTTP_400_BAD_REQUEST)
+    #     return Response({"status":"Deleted"}, status=200)
 
 
     def get_file(self, filename):
@@ -202,15 +213,3 @@ class MediaView(APIView):
         with open(path_local, "wb") as file_obj:
             blob.download_to_file(file_obj)
         return path_local
-
-
-
-class FileUploadView(APIView):
-    parser_classes = [FileUploadParser]
-
-    def put(self, request, filename, format=None):
-        file_obj = request.data['file']
-        # ...
-        # do some stuff with uploaded file
-        # ...
-        return Response(status=204)
