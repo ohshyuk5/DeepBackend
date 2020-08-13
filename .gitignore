@@ -4,8 +4,6 @@ cs*
 .vscode
 db.sqlite3
 
-fire*
-.firebaserc
 storage.rules
 backend/storage
 nohup.out
