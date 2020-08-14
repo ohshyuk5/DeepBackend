@@ -21,7 +21,7 @@ import sys
 import subprocess
 import shutil
 from ..wsgi import db, bucket
-from ..background import main
+from ..NudeNet.porn_detection import classifier
 
 # Own
 # from ~ imort ~UL
@@ -56,50 +56,25 @@ class MediaView(APIView):
         data = json.loads(raw_data)
 
         self.uid = data['uid']
-        
-        # Pick random # for rid
-        rid = secrets.token_hex(15)
-        
-        # Check for duplicated rid in the DB
-        docs = db.collection(u'users').document(self.uid).collection(u'rid').stream()
-        
-        doc_list = []
-
-        for doc in docs:
-            doc_list.append(doc.id)
-
-        while rid in doc_list:
-            rid = secrets.token_hex(15)
-        
-        self.rid = str(rid)
-        # self.rid = data['rid']
-        self.src = data['src']
-        self.dst = data['dst']
-
+        self.rid = data['rid']
         self.result = data['result']
 
-        # Get src & dst files
-        try:
-            path_src = self.get_file(self.src)    # For Firebase storage
-            path_dst = self.get_file(self.dst)    # For Firebase storage
-        except:
-            return Response({"status":"Failed reading files from the storage"}, status=status.HTTP_404_NOT_FOUND)
-        # path_src = 'backend/storage/'+ self.rid + '/src/src.mp4'    # For direct upload
-        # path_dst = 'backend/storage/'+ self.rid + '/dst/dst.mp4'    # For direct upload
-
-        # path_result = 'backend/storage/' + self.rid + '/result/'
-        # if not os.path.isdir(path_result):
-        #     os.mkdir(path_result)
+        path_src = 'backend/storage/'+ self.rid + '/src/src.mp4'    # Uploaded already
+        path_dst = 'backend/storage/'+ self.rid + '/dst/dst.mp4'    # Uploaded already
+        path_result = 'backend/storage/' + self.rid + '/result/'
         
+        if not os.path.isdir(path_result):
+            os.mkdir(path_result)
         
         db_ptr = db.collection(u'users').document(self.uid).collection(u'rid').document(self.rid)
         db_ptr.set({
-            'status': 'ongoing'
+            'status': 'on going'
         })
 
-        # os.system('nohup python ~/Server/DeepBackend/backend/background.py -u ' + self.uid + ' -r ' + self.rid + ' -s ' + path_src + ' -d ' + path_dst + ' -o ' + path_result + ' -n ' + self.result + ' &')
-        
-        return Response({"status":"Success", "rid":self.rid}, status=200)
+        os.system('nohup python ~/Server/DeepBackend/backend/background.py -u ' + self.uid + ' -r ' + self.rid + ' -s ' + path_src + ' -d ' + path_dst + ' -o ' + path_result + ' -n ' + self.result + ' &')
+
+        response = HttpResponse(json.dumps({"status":"Process on going"}), content_type='application/json', status=status.HTTP_200_OK)
+        return response
 
 
     """
@@ -113,13 +88,12 @@ class MediaView(APIView):
             uid = str(request.GET.get('uid'))
             rid = str(request.GET.get('rid'))
             typ = str(request.GET.get('type'))
-            name = str(request.GET.get('name'))
-            filename = name + '.mp4'
+            filename = str(request.GET.get('name'))
 
             self.result = None
             
             path = "~/Server/DeepBackend/"
-            path_remote = 'users/' + uid + '/' + name + '/' + typ + '/' + filename
+            path_remote = 'users/' + uid + '/' + rid + '/' + typ + '/' + filename
             path_local = 'backend/storage/temp/' + filename
             print("remote: ", path_remote)
             print("local : ", path_local)
@@ -129,7 +103,7 @@ class MediaView(APIView):
             
             if typ != 'result':
                 json_data = {
-                    'status': 'Only results are accessible'
+                    'status': 'Only the result video is accessible'
                 }
                 return Response(json_data, status=status.HTTP_400_BAD_REQUEST)
             
@@ -198,9 +172,8 @@ class MediaView(APIView):
             name = "dst"
         uid = self.uid
         rid = self.rid
-        result = self.result
 
-        path_remote = 'users/' + uid + '/' + result + '/' + name + '/' + filename
+        path_remote = 'users/' + uid + '/' + rid + '/' + name + '/' + filename
         path_local = 'backend/storage/' + rid + '/' + name + '/' + name + '.mp4'
         
         if not os.path.isdir('backend/storage/' + rid + '/'):
