@@ -15,6 +15,31 @@ from .models import User
 from ..wsgi import db
  
 class UserView(APIView):
+    def post(self, request):
+        
+        raw_data = request.body.decode('utf-8')
+        data = json.loads(raw_data)
+
+        uid = data['uid']
+        
+        # Pick random # for rid
+        rid = secrets.token_hex(15)
+        
+        # Check for duplicated rid in the DB
+        docs = db.collection(u'users').document(uid).collection(u'rid').stream()
+        
+        doc_list = []
+
+        for doc in docs:
+            doc_list.append(doc.id)
+
+        while rid in doc_list:
+            rid = secrets.token_hex(15)
+        
+        rid = str(rid)
+        response = HttpResponse(json.dumps({"status":"Success", "rid":rid}), content_type='application/json', status=status.HTTP_200_OK)
+        return response
+        
     """
     GET /users
     params: uid, rid
@@ -39,5 +64,6 @@ class UserView(APIView):
         
         db_ptr = db.collection(u'users').document(uid).collection(u'rid').document(rid)
         doc = db_ptr.get()
-
-        return Response(doc.to_dict(), status=200)
+        print(doc.to_dict())
+        response = HttpResponse(json.dumps(doc.to_dict()), content_type='application/json', status=status.HTTP_200_OK)
+        return response
