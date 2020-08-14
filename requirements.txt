@@ -19,3 +19,10 @@ google-api-core==1.17.0
 google-cloud-bigquery==1.23.0
 google-cloud-bigquery-storage==0.7.0
 google-cloud-storage==1.23.0
+
+# For Nudenet
+keras==2.2.4
+opencv-python
+keras-retinanet==0.5.1
+pydload
+scikit-image
