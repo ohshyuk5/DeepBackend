@@ -23,21 +23,10 @@ import shutil
 
 # Custom functions
 from ..wsgi import db, bucket
+from ..NudeNet.porn_detection import classifier
 
 
 class FileUploadView(APIView):
-    parser_classes = [FileUploadParser]
-    """
-    GET upload/
-    params: None
-
-    Get rid from the server (For direct upload case)
-    """
-    def get(self, request):
-
-        rid = str(secrets.token_hex(15))
-
-        return Response({'status':'Success', 'rid':rid}, status=200)
     """
     PUT upload/
     params: uid, rid, type
@@ -45,18 +34,36 @@ class FileUploadView(APIView):
     Upload a file to the server directly
     """
     def put(self, request, filename, format=None):
-        uid = str(request.GET.get('uid'))
-        rid = str(request.GET.get('rid'))
-        typ = str(request.GET.get('type'))
+        self.uid = str(request.GET.get('uid'))
+        self.rid = str(request.GET.get('rid'))
+        self.typ = str(request.GET.get('type'))
+        self.name = str(request.GET.get('filename'))
+
+        path_local = self.get_file()
         
-        file_obj = request.data['file']
+        if classifier(path_local):   # True if the video is a Porn
+            response = HttpResponse(json.dumps({"status":"Given video is a porn"}), content_type='application/json', status=status.HTTP_400_BAD_REQUEST)
+            return response
+        
+        return Response({'status':'File named ' + self.name + ' uploaded'}, status=200)
+
+    def get_file(self):
+        
+        uid = self.uid
+        rid = self.rid
+        typ = self.typ
+        name = self.name
+
         if not os.path.isdir('backend/storage/' + rid + '/'):
                 os.mkdir('backend/storage/' + rid + '/')
         if not os.path.isdir('backend/storage/' + rid + '/' + typ + '/'):
                 os.mkdir('backend/storage/' + rid + '/' + typ + '/')
 
-        with open('backend/storage/'+ rid + '/' + typ + '/' + typ + '.mp4', 'wb') as f:
-            for line in file_obj:
-                f.write(line)
-        
-        return Response({'status':'Uploaded'}, status=200)
+        path_remote = 'users/' + uid + '/' + rid + '/' + typ + '/' + name
+        path_local = 'backend/storage/' + rid + '/' + typ + '/' + typ + '.mp4'
+
+        # download file
+        blob = bucket.get_blob(path_remote)
+        with open(path_local, "wb") as file_obj:
+            blob.download_to_file(file_obj)
+        return path_local
