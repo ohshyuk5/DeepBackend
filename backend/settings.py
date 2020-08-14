@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     'backend.api_user',
     'backend.api_media',
     'backend.api_upload',
+    'backend.faceswap',
+    'backend.NudeNet',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
