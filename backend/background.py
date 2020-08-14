@@ -67,7 +67,7 @@ def main(argv):
     
     path_model_abs = path + 'backend/models/' + rid +'/'
 
-    path_remote = 'users/' + uid + '/' + name + '/result/' + name + '.mp4'
+    path_remote = 'users/' + uid + '/' + rid + '/result/' + name
 
     if not os.path.isdir('backend/models/' + rid +'/'):
         os.mkdir('backend/models/' + rid +'/')
