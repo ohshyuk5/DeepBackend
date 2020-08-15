@@ -33,11 +33,19 @@ class FileUploadView(APIView):
 
     Upload a file to the server directly
     """
-    def put(self, request, filename, format=None):
-        self.uid = str(request.GET.get('uid'))
-        self.rid = str(request.GET.get('rid'))
-        self.typ = str(request.GET.get('type'))
-        self.name = str(request.GET.get('filename'))
+    def put(self, request):
+        raw_data = request.body.decode('utf-8')
+        data = json.loads(raw_data)
+
+        # self.uid = str(request.GET.get('uid'))
+        # self.rid = str(request.GET.get('rid'))
+        # self.typ = str(request.GET.get('type'))
+        # self.name = str(request.GET.get('filename'))
+
+        self.uid = data['uid']
+        self.rid = data['rid']
+        self.typ = data['type']
+        self.name = data['filename']
 
         path_local = self.get_file()
         
@@ -45,7 +53,7 @@ class FileUploadView(APIView):
             response = HttpResponse(json.dumps({"status":"Given video is a porn"}), content_type='application/json', status=status.HTTP_400_BAD_REQUEST)
             return response
         
-        return Response({'status':'File named ' + self.name + ' uploaded'}, status=200)
+        return Response({'status':'File named "' + self.name + '" uploaded'}, status=200)
 
     def get_file(self):
         
