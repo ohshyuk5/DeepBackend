@@ -85,10 +85,18 @@ class MediaView(APIView):
     """
     def get(self, request):
         try:
-            uid = str(request.GET.get('uid'))
-            rid = str(request.GET.get('rid'))
-            typ = str(request.GET.get('type'))
-            filename = str(request.GET.get('name'))
+            # uid = str(request.GET.get('uid'))
+            # rid = str(request.GET.get('rid'))
+            # typ = str(request.GET.get('type'))
+            # filename = str(request.GET.get('filename'))
+
+            raw_data = request.body.decode('utf-8')
+            data = json.loads(raw_data)
+
+            uid = data['uid']
+            rid = data['rid']
+            typ = data['type']
+            filename = data['filename']
 
             self.result = None
             
