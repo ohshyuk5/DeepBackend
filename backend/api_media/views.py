@@ -21,8 +21,6 @@ import sys
 import subprocess
 import shutil
 from ..wsgi import db, bucket
-from ..NudeNet.porn_detection import classifier
-
 # Own
 # from ~ imort ~UL
 
@@ -62,13 +60,16 @@ class MediaView(APIView):
         path_src = 'backend/storage/'+ self.rid + '/src/src.mp4'    # Uploaded already
         path_dst = 'backend/storage/'+ self.rid + '/dst/dst.mp4'    # Uploaded already
         path_result = 'backend/storage/' + self.rid + '/result/'
-        
+
+        if not os.path.isdir('backend/storage/'+ self.rid + '/'):
+            os.mkdir('backend/storage/'+ self.rid + '/')
         if not os.path.isdir(path_result):
             os.mkdir(path_result)
         
         db_ptr = db.collection(u'users').document(self.uid).collection(u'rid').document(self.rid)
         db_ptr.set({
-            'status': 'on going'
+            'status': 'On going',
+            # 'path': 'users/' + self.uid + '/' + self.rid + '/results/' + self.result
         })
 
         os.system('nohup python ~/Server/DeepBackend/backend/background.py -u ' + self.uid + ' -r ' + self.rid + ' -s ' + path_src + ' -d ' + path_dst + ' -o ' + path_result + ' -n ' + self.result + ' &')
@@ -98,7 +99,7 @@ class MediaView(APIView):
             typ = data['type']
             filename = data['filename']
 
-            self.result = None
+            # self.result = None
             
             path = "~/Server/DeepBackend/"
             path_remote = 'users/' + uid + '/' + rid + '/' + typ + '/' + filename
