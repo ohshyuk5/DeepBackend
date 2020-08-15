@@ -49,14 +49,18 @@ class UserView(APIView):
     def get(self, request, **kwargs):
         # Read uid from req
         uid = request.GET.get('uid')
+        
         print("uid: ", uid)
+
         if uid == None:
             return Response({'status': 'No uid'})
         else:
             uid = str(uid)
         # Read rid from req
         rid = request.GET.get('rid')
+        
         print("rid: ", rid)
+
         if rid == None:
             return Response({'status': 'No rid'}, status=404)
         else:
@@ -64,6 +68,13 @@ class UserView(APIView):
         
         db_ptr = db.collection(u'users').document(uid).collection(u'rid').document(rid)
         doc = db_ptr.get()
-        print(doc.to_dict())
-        response = HttpResponse(json.dumps(doc.to_dict()), content_type='application/json', status=status.HTTP_200_OK)
+        print("1")
+        if doc.to_dict() == None:
+            print("2")
+            response = HttpResponse(json.dumps({"status":"No process"}), content_type='application/json', status=status.HTTP_404_NOT_FOUND)
+        else:
+            print("3")
+            print(doc.to_dict())
+            response = HttpResponse(json.dumps(doc.to_dict()), content_type='application/json', status=status.HTTP_200_OK)
+
         return response
