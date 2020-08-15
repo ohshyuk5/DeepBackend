@@ -21,9 +21,11 @@ import sys
 import subprocess
 import shutil
 
+
+import urllib
+
 # Custom functions
 from ..wsgi import db, bucket
-from ..NudeNet.porn_detection import classifier
 
 
 class FileUploadView(APIView):
@@ -48,12 +50,18 @@ class FileUploadView(APIView):
         self.name = data['filename']
 
         path_local = self.get_file()
+                
+        url = 'http://localhost:8081/api/'
+        data = {'path': path_local}
+        data = json.dumps(data)
+        data = str(data)
+        post_data = data.encode('utf-8')
+        req = urllib.request.Request(url, post_data)
+        res = urllib.request.urlopen(req, timeout = 1000)
+
         
-        if classifier(path_local):   # True if the video is a Porn
-            response = HttpResponse(json.dumps({"status":"Given video is a porn"}), content_type='application/json', status=status.HTTP_400_BAD_REQUEST)
-            return response
-        
-        return Response({'status':'File named "' + self.name + '" uploaded'}, status=200)
+        return Response(json.loads(res.read()), status=200)
+
 
     def get_file(self):
         
@@ -61,15 +69,15 @@ class FileUploadView(APIView):
         rid = self.rid
         typ = self.typ
         name = self.name
-
+        print(uid, "\n", rid)
         if not os.path.isdir('backend/storage/' + rid + '/'):
-                os.mkdir('backend/storage/' + rid + '/')
+            os.mkdir('backend/storage/' + rid + '/')
         if not os.path.isdir('backend/storage/' + rid + '/' + typ + '/'):
-                os.mkdir('backend/storage/' + rid + '/' + typ + '/')
-
+            os.mkdir('backend/storage/' + rid + '/' + typ + '/')
+        print(os.path.isdir('backend/storage/' + rid + '/' + typ + '/'))
         path_remote = 'users/' + uid + '/' + rid + '/' + typ + '/' + name
         path_local = 'backend/storage/' + rid + '/' + typ + '/' + typ + '.mp4'
-
+        
         # download file
         blob = bucket.get_blob(path_remote)
         with open(path_local, "wb") as file_obj:
