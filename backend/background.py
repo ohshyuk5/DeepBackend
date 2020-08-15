@@ -75,37 +75,37 @@ def main(argv):
     # Extract face
     # python faceswap.py extract -i ~/faceswap/src/trump -o ~/faceswap/faces/trump
     
-    # os.system('python ' + path_faceswap + ' extract -i ' + path_src_abs + ' -o ' + path_src_ext_abs)
-    # os.system('python ' + path_faceswap + ' extract -i ' + path_dst_abs + ' -o ' + path_dst_ext_abs)
+    os.system('python ' + path_faceswap + ' extract -i ' + path_src_abs + ' -o ' + path_src_ext_abs)
+    os.system('python ' + path_faceswap + ' extract -i ' + path_dst_abs + ' -o ' + path_dst_ext_abs)
 
     # Train
     # python faceswap.py train -A ~/faceswap/faces/trump -B ~/faceswap/faces/cage -m ~/faceswap/trump_cage_model/
     
-    # os.system('python ' + path_faceswap + ' train -A ' + path_dst_ext_abs + ' -B ' + path_src_ext_abs + ' -m ' + path_model_abs)
+    os.system('python ' + path_faceswap + ' train -A ' + path_dst_ext_abs + ' -B ' + path_src_ext_abs + ' -m ' + path_model_abs)
     
     # Convert
     # python faceswap.py convert -i ~/faceswap/src/trump/ -o ~/faceswap/converted/ -m ~/faceswap/trump_cage_model/
     
-    # os.system('python ' + path_faceswap + ' convert -i ' + path_dst_abs + ' -o ' + path_result_abs + 'imgs/' + ' -m ' + path_model_abs)
+    os.system('python ' + path_faceswap + ' convert -i ' + path_dst_abs + ' -o ' + path_result_abs + 'imgs/' + ' -m ' + path_model_abs)
     
     # Generating a video
-    # os.system('ffmpeg -f image2 -i ' + path_result_abs + 'imgs/dst_%6d.png ' + path_result_abs + 'out.mp4')
+    os.system('ffmpeg -f image2 -i ' + path_result_abs + 'imgs/dst_%6d.png ' + path_result_abs + 'out.mp4')
 
 
-    # if path_src is not None and os.path.isfile(path_src):
-    #     os.remove(path_src)
-    # if path_dst is not None and os.path.isfile(path_dst):
-    #     os.remove(path_dst)
+    if path_src is not None and os.path.isfile(path_src):
+        os.remove(path_src)
+    if path_dst is not None and os.path.isfile(path_dst):
+        os.remove(path_dst)
 
 
     # Upload
-    # blob = bucket.blob(path_remote)
-    # blob.upload_from_filename(filename=path_result + 'out.mp4')
+    blob = bucket.blob(path_remote)
+    blob.upload_from_filename(filename=path_result + 'out.mp4')
 
-    # db_ptr = db.collection(u'users').document(uid).collection(u'rid').document(rid)
-    # db_ptr.set({
-    #     'status': 'done'
-    # })
+    db_ptr = db.collection(u'users').document(uid).collection(u'rid').document(rid)
+    db_ptr.set({
+        'status': 'Done'
+    })
 
     shutil.rmtree('backend/storage/' + rid + '/') 
     shutil.rmtree('backend/models/' + rid + '/') 
