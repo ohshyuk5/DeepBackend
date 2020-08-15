@@ -49,19 +49,25 @@ class FileUploadView(APIView):
         self.typ = data['type']
         self.name = data['filename']
 
-        path_local = self.get_file()
-                
-        url = 'http://localhost:8081/api/'
-        data = {'path': path_local}
+        # path_local = self.get_file()
+
+        url = 'http://5ba580bdaa79.ngrok.io/api/'
+        data = {'path': "helo"}
         data = json.dumps(data)
         data = str(data)
-        post_data = data.encode('utf-8')
+        
+        post_data = raw_data.encode('utf-8')
         req = urllib.request.Request(url, post_data)
         res = urllib.request.urlopen(req, timeout = 1000)
+        data = json.loads(res.read())
 
+        if data["status"] == "Safe":
+            self.get_file()
+        else:
+            shutil.rmtree('backend/storage/' + self.rid + '/')
         
-        return Response(json.loads(res.read()), status=200)
-
+        return Response(data, status=200)
+        # return Response({"status":"good"}, status=200)
 
     def get_file(self):
         
@@ -69,12 +75,10 @@ class FileUploadView(APIView):
         rid = self.rid
         typ = self.typ
         name = self.name
-        print(uid, "\n", rid)
         if not os.path.isdir('backend/storage/' + rid + '/'):
             os.mkdir('backend/storage/' + rid + '/')
         if not os.path.isdir('backend/storage/' + rid + '/' + typ + '/'):
             os.mkdir('backend/storage/' + rid + '/' + typ + '/')
-        print(os.path.isdir('backend/storage/' + rid + '/' + typ + '/'))
         path_remote = 'users/' + uid + '/' + rid + '/' + typ + '/' + name
         path_local = 'backend/storage/' + rid + '/' + typ + '/' + typ + '.mp4'
         
