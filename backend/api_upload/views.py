@@ -49,24 +49,33 @@ class FileUploadView(APIView):
         self.typ = data['type']
         self.name = data['filename']
 
-        # path_local = self.get_file()
+        path_local = self.get_file()
 
-        url = 'http://5ba580bdaa79.ngrok.io/api/'
-        data = {'path': "helo"}
-        data = json.dumps(data)
-        data = str(data)
+        os.system('python backend/background_detect.py ' + 'backend/storage/' + self.rid + '/' + self.typ + '/ ' + self.typ + '.mp4')
         
-        post_data = raw_data.encode('utf-8')
-        req = urllib.request.Request(url, post_data)
-        res = urllib.request.urlopen(req, timeout = 1000)
-        data = json.loads(res.read())
+        try:
+            with open('backend/out.txt', 'r') as out:
+                pred = out.read()
+        except:
+            response = Response({"status":"Fail"}, status=400)
 
-        if data["status"] == "Safe":
-            self.get_file()
-        else:
-            shutil.rmtree('backend/storage/' + self.rid + '/')
         
-        return Response(data, status=200)
+
+        # url = 'http://5ba580bdaa79.ngrok.io/api/'
+        # data = {'path': "helo"}
+        # data = json.dumps(data)
+        # data = str(data)
+        
+        # post_data = raw_data.encode('utf-8')
+        # req = urllib.request.Request(url, post_data)
+        # res = urllib.request.urlopen(req, timeout = 1000)
+        # data = json.loads(res.read())
+
+        if pred != "Safe":
+            if os.path.isdir('backend/storage/' + self.rid + '/'):
+                shutil.rmtree('backend/storage/' + self.rid + '/')
+        
+        return Response({"status":pred}, status=200)
         # return Response({"status":"good"}, status=200)
 
     def get_file(self):
