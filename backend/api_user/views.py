@@ -68,12 +68,12 @@ class UserView(APIView):
         
         db_ptr = db.collection(u'users').document(uid).collection(u'rid').document(rid)
         doc = db_ptr.get()
-        print("1")
+        # print("1")
         if doc.to_dict() == None:
-            print("2")
+            # print("2")
             response = HttpResponse(json.dumps({"status":"No process"}), content_type='application/json', status=status.HTTP_404_NOT_FOUND)
         else:
-            print("3")
+            # print("3")
             print(doc.to_dict())
             response = HttpResponse(json.dumps(doc.to_dict()), content_type='application/json', status=status.HTTP_200_OK)
 
