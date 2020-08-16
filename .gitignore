@@ -3,6 +3,7 @@ cs*
 .env
 .vscode
 db.sqlite3
+backend/out.txt
 
 storage.rules
 backend/storage
