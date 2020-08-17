@@ -2,9 +2,13 @@ import os
 import sys
 from keras import backend as K
 import shutil
+import operator
+import cv2
+import tempfile
 
 # from ..wsgi import bucket, nude_classifier
 from NudeNet.nudenet import NudeClassifier
+
 
 def main(argv):
 
@@ -20,28 +24,55 @@ def main(argv):
     nude_classifier = NudeClassifier()
 
     dic_result = nude_classifier.classify_video(path_name)
-    print(dic_result)
+    # print(dic_result)
 
+    fps = dic_result['metadata']['fps']
+    spf = 1 / fps
+    print("fps: ", fps, "len: ", dic_result['metadata']['video_length'])
     count = 0
     num_frames = 0
+
+    pred_list = []
+    pred_dict = {}
+
     # print(path, "got result")
     for key, value in dic_result['preds'].items():
         if float(value['unsafe']) > 0.6:
+            time = int(key) * spf
+            prob = value['unsafe']
+            # pred_list.append("time: {} porn: {}".format(str(time), prob))
+            pred_dict[int(key)] = float(prob)
             count += 1
         num_frames += 1
-        # print(count)
 
     pred = count / num_frames
 
-    pred = "Porn" if pred > 0.5 else "Safe"
+    pred = "Porn" if pred > 0.7 else "Safe"
     
-    print(pred)
-    
-    if os.path.isfile('backend/out.txt'):
-        os.remove('backend/out.txt')
+    if pred == "Porn":
+        pred_sdict = sorted(pred_dict.items(), key=lambda x: x[1], reverse=True)[:3]
+        
+        vidcap = cv2.VideoCapture(path_name)
+        detected_frame = pred_sdict[0][0]
+        print('frame: ', detected_frame)
+        success, image = vidcap.read()
+        count = 0
+        success = True
 
-    with open('backend/out.txt', 'w') as out:
+        while success:
+            success, image = vidcap.read()
+            if count == detected_frame:
+                cv2.imwrite('/home/ubuntu/Server/DeepBackend/' + path + 'nsfw.jpg', image)
+                break
+            count += 1
+    
+    if os.path.isfile(path + 'out.txt'):
+        os.remove(path + 'out.txt')
+
+    with open(path + 'out.txt', 'w') as out:
         out.write(pred)
+
+    print(pred)
     
 
 if __name__ == "__main__":
