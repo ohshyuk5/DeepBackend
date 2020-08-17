@@ -297,7 +297,7 @@ class Train():
         else:
             display_func = None
 
-        for iteration in range(0, 15000):
+        for iteration in range(0, 1000):
             logger.trace("Training iteration: %s", iteration)
             save_iteration = iteration % self._args.save_interval == 0
             viewer = display_func if save_iteration or self._save_now else None
