@@ -103,8 +103,10 @@ def main(argv):
     blob.upload_from_filename(filename=path_result + 'out.mp4')
 
     db_ptr = db.collection(u'users').document(uid).collection(u'rid').document(rid)
-    db_ptr.set({
-        'status': 'Done'
+    db_ptr.update({
+        'uid': uid,
+        'rid': rid,
+        'status': 'done'
     })
 
     shutil.rmtree('backend/storage/' + rid + '/') 
