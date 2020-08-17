@@ -7,6 +7,7 @@ backend/out.txt
 
 storage.rules
 backend/storage
+backend/models
 nohup.out
 node_modules/
 
