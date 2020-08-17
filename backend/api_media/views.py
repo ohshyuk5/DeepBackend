@@ -20,6 +20,8 @@ import secrets
 import sys
 import subprocess
 import shutil
+import time
+
 from ..wsgi import db, bucket
 # Own
 # from ~ imort ~UL
@@ -55,24 +57,35 @@ class MediaView(APIView):
 
         self.uid = data['uid']
         self.rid = data['rid']
-        self.result = data['result']
+        name = data['name']
 
-        path_src = 'backend/storage/'+ self.rid + '/src/src.mp4'    # Uploaded already
-        path_dst = 'backend/storage/'+ self.rid + '/dst/dst.mp4'    # Uploaded already
-        path_result = 'backend/storage/' + self.rid + '/result/'
+        self.name = "out.mp4"
 
-        if not os.path.isdir('backend/storage/'+ self.rid + '/'):
-            os.mkdir('backend/storage/'+ self.rid + '/')
+
+        path_src = 'backend/storage/' + self.uid + '/' + self.rid + '/src/src.mp4'    # Uploaded already
+        path_dst = 'backend/storage/' + self.uid + '/' + self.rid + '/dst/dst.mp4'    # Uploaded already
+        path_result = 'backend/storage/' + self.uid + '/' + self.rid + '/result/'
+
         if not os.path.isdir(path_result):
             os.mkdir(path_result)
         
+        
+        os.system('nohup python ~/Server/DeepBackend/backend/background.py -u ' + self.uid + ' -r ' + self.rid + ' -s ' + path_src + ' -d ' + path_dst + ' -o ' + path_result + ' -n ' + self.name + ' &')
+        
+        
         db_ptr = db.collection(u'users').document(self.uid).collection(u'rid').document(self.rid)
         db_ptr.set({
-            'status': 'On going',
-            # 'path': 'users/' + self.uid + '/' + self.rid + '/results/' + self.result
+            'uid': self.uid,
+            'rid': self.rid,
+            'status': 'ongoing',
+            'name': name
+            # 'path': 'users/' + self.uid + '/' + self.rid + '/results/' + self.name
         })
-
-        os.system('nohup python ~/Server/DeepBackend/backend/background.py -u ' + self.uid + ' -r ' + self.rid + ' -s ' + path_src + ' -d ' + path_dst + ' -o ' + path_result + ' -n ' + self.result + ' &')
+        db_ptr = db.collection(u'users').document(self.uid)
+        db_ptr.set({
+            'time':time.strftime('%d-%H-%M-%S', time.localtime(time.time()))
+        })
+        
 
         response = HttpResponse(json.dumps({"status":"Process on going"}), content_type='application/json', status=status.HTTP_200_OK)
         return response
@@ -86,35 +99,33 @@ class MediaView(APIView):
     """
     def get(self, request):
         try:
-            # uid = str(request.GET.get('uid'))
-            # rid = str(request.GET.get('rid'))
+            uid = str(request.GET.get('uid'))
+            rid = str(request.GET.get('rid'))
             # typ = str(request.GET.get('type'))
             # filename = str(request.GET.get('filename'))
 
-            raw_data = request.body.decode('utf-8')
-            data = json.loads(raw_data)
-
-            uid = data['uid']
-            rid = data['rid']
-            typ = data['type']
-            filename = data['filename']
+            # raw_data = request.body.decode('utf-8')
+            # data = json.loads(raw_data)
+            # uid = data['uid']
+            # rid = data['rid']
+            path = 'nsfw.jpg'
 
             # self.result = None
             
-            path = "~/Server/DeepBackend/"
-            path_remote = 'users/' + uid + '/' + rid + '/' + typ + '/' + filename
-            path_local = 'backend/storage/temp/' + filename
+            # path = "~/Server/DeepBackend/"
+            path_remote = 'users/' + uid + '/' + rid + '/' + path
+            path_local = 'backend/storage/temp/' + path
             print("remote: ", path_remote)
             print("local : ", path_local)
             if not os.path.isdir('backend/storage/temp/'):
                 os.mkdir('backend/storage/temp/')
             
             
-            if typ != 'result':
-                json_data = {
-                    'status': 'Only the result video is accessible'
-                }
-                return Response(json_data, status=status.HTTP_400_BAD_REQUEST)
+            # if typ != 'result':
+            #     json_data = {
+            #         'status': 'Only the result video is accessible'
+            #     }
+            #     return Response(json_data, status=status.HTTP_400_BAD_REQUEST)
             
             
             # download file
@@ -138,8 +149,8 @@ class MediaView(APIView):
         try:
             file = FileWrapper(open(path_local, 'rb'))
             # FilePointer = open(path_local, "r")
-            response = HttpResponse(file, content_type='video/mp4')
-            response['Content-Disposition'] = 'attachment; filename=' + filename
+            response = HttpResponse(file, content_type='image/png')
+            response['Content-Disposition'] = 'attachment; filename=' + 'nsfw.png'
             if os.path.isfile(path_local):
                 os.remove(path_local)
             return response
