@@ -35,48 +35,42 @@ class FileUploadView(APIView):
 
     Upload a file to the server directly
     """
-    def put(self, request):
-        raw_data = request.body.decode('utf-8')
-        data = json.loads(raw_data)
+    def post(self, request):
 
         # self.uid = str(request.GET.get('uid'))
         # self.rid = str(request.GET.get('rid'))
         # self.typ = str(request.GET.get('type'))
         # self.name = str(request.GET.get('filename'))
 
+        raw_data = request.body.decode('utf-8')
+        data = json.loads(raw_data)
         self.uid = data['uid']
         self.rid = data['rid']
         self.typ = data['type']
         self.name = data['filename']
+        print(self.uid, self.rid, self.typ, self.name)
 
         path_local = self.get_file()
 
-        os.system('python backend/background_detect.py ' + 'backend/storage/' + self.rid + '/' + self.typ + '/ ' + self.typ + '.mp4')
+        os.system('python backend/background_detect.py ' + 'backend/storage/' + self.uid + '/' + self.rid + '/' + self.typ + '/ ' + self.typ + '.mp4')
         
         try:
-            with open('backend/out.txt', 'r') as out:
+            with open('backend/storage/' + self.uid + '/' + self.rid + '/' + self.typ + '/out.txt', 'r') as out:
                 pred = out.read()
         except:
             response = Response({"status":"Fail"}, status=400)
 
-        
-
-        # url = 'http://5ba580bdaa79.ngrok.io/api/'
-        # data = {'path': "helo"}
-        # data = json.dumps(data)
-        # data = str(data)
-        
-        # post_data = raw_data.encode('utf-8')
-        # req = urllib.request.Request(url, post_data)
-        # res = urllib.request.urlopen(req, timeout = 1000)
-        # data = json.loads(res.read())
-
         if pred != "Safe":
-            if os.path.isdir('backend/storage/' + self.rid + '/'):
-                shutil.rmtree('backend/storage/' + self.rid + '/')
+            # file = FileWrapper(open('backend/storage/' + self.rid + '/' + self.typ +'/nsfw.jpg', 'rb'))
+            # filename = 'nsfw.png'
+            # response = HttpResponse(file, content_type='image/png')
+            # response['Content-Disposition'] = 'attachment; filename=' + filename
+            self.upload_file()
+            shutil.rmtree('backend/storage/' + self.uid + '/' + self.rid + '/')
+            # return response
         
+        # return Response({"status":"Porn"}, status=200)
         return Response({"status":pred}, status=200)
-        # return Response({"status":"good"}, status=200)
 
     def get_file(self):
         
@@ -84,15 +78,27 @@ class FileUploadView(APIView):
         rid = self.rid
         typ = self.typ
         name = self.name
-        if not os.path.isdir('backend/storage/' + rid + '/'):
-            os.mkdir('backend/storage/' + rid + '/')
-        if not os.path.isdir('backend/storage/' + rid + '/' + typ + '/'):
-            os.mkdir('backend/storage/' + rid + '/' + typ + '/')
+        if not os.path.isdir('backend/storage/' + uid + '/'):
+            os.mkdir('backend/storage/' + uid + '/')
+        if not os.path.isdir('backend/storage/' + uid + '/' + rid + '/'):
+            os.mkdir('backend/storage/' + uid + '/' + rid + '/')
+        if not os.path.isdir('backend/storage/' + uid + '/' + rid + '/' + typ + '/'):
+            os.mkdir('backend/storage/' + uid + '/' + rid + '/' + typ + '/')
         path_remote = 'users/' + uid + '/' + rid + '/' + typ + '/' + name
-        path_local = 'backend/storage/' + rid + '/' + typ + '/' + typ + '.mp4'
+        path_local = 'backend/storage/' + uid + '/' + rid + '/' + typ + '/' + typ + '.mp4'
         
         # download file
         blob = bucket.get_blob(path_remote)
         with open(path_local, "wb") as file_obj:
             blob.download_to_file(file_obj)
         return path_local
+
+    def upload_file(self):
+        
+        path_remote = 'users/' + self.uid + '/' + self.rid + '/nsfw.jpg'
+
+        # Upload
+        blob = bucket.blob(path_remote)
+        blob.upload_from_filename(filename='backend/storage/' + self.uid + '/' + self.rid + '/' + self.typ +'/nsfw.jpg')
+
+        return
