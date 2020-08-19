@@ -55,11 +55,14 @@ class MediaView(APIView):
         raw_data = request.body.decode('utf-8')
         data = json.loads(raw_data)
 
-        self.uid = data['uid']
-        self.rid = data['rid']
+        self.uid = str(data['uid'])
+        self.rid = str(data['rid'])
         name = data['name']
 
-        self.name = "out.mp4"
+        if name == None:
+            name = self.rid + '.mp4'
+
+        self.name = 'out.mp4'
 
 
         path_src = 'backend/storage/' + self.uid + '/' + self.rid + '/src/src.mp4'    # Uploaded already
@@ -102,12 +105,6 @@ class MediaView(APIView):
             uid = str(request.GET.get('uid'))
             rid = str(request.GET.get('rid'))
             # typ = str(request.GET.get('type'))
-            # filename = str(request.GET.get('filename'))
-
-            # raw_data = request.body.decode('utf-8')
-            # data = json.loads(raw_data)
-            # uid = data['uid']
-            # rid = data['rid']
             path = 'nsfw.jpg'
 
             # self.result = None
@@ -115,27 +112,19 @@ class MediaView(APIView):
             # path = "~/Server/DeepBackend/"
             path_remote = 'users/' + uid + '/' + rid + '/' + path
             path_local = 'backend/storage/temp/' + path
+            
             print("remote: ", path_remote)
             print("local : ", path_local)
+
             if not os.path.isdir('backend/storage/temp/'):
                 os.mkdir('backend/storage/temp/')
-            
-            
-            # if typ != 'result':
-            #     json_data = {
-            #         'status': 'Only the result video is accessible'
-            #     }
-            #     return Response(json_data, status=status.HTTP_400_BAD_REQUEST)
-            
             
             # download file
             blob = bucket.get_blob(path_remote)
             # txt = blob.download_as_string()
             with open(path_local, "wb") as file_obj:
                 blob.download_to_file(file_obj)
-        
-        # try:
-        #     pass
+
         except:
             json_data = {
                 'status': 'Cannot find file with the given name'
@@ -144,11 +133,8 @@ class MediaView(APIView):
                 os.remove(path_local)
             return Response(json_data, status=status.HTTP_404_NOT_FOUND)
         
-        
-
         try:
             file = FileWrapper(open(path_local, 'rb'))
-            # FilePointer = open(path_local, "r")
             response = HttpResponse(file, content_type='image/png')
             response['Content-Disposition'] = 'attachment; filename=' + 'nsfw.png'
             if os.path.isfile(path_local):
@@ -162,27 +148,6 @@ class MediaView(APIView):
                 "status": "Cannot send file to client",
             }
             return Response(json_response, status=status.HTTP_409_CONFLICT)
-
-
-    """
-    Delete /media/{user_id}/{req_id}       # Delete all media sent
-    """
-    # def delete(self, request):
-    #     try:
-    #         raw_data = request.body.decode('utf-8')
-    #         data = json.loads(raw_data)
-
-    #         uid = data['uid']
-    #         rid = data['rid']
-    #         request = data['request']
-    #         filename = data['filename']
-
-    #         path_remote = 'users/' + uid + '/' + rid + '/' + request + '/' + filename
-    #         blob = bucket.blob(path_remote)
-    #         blob.delete()
-    #     except:
-    #         return Response({"status":"Cannot delete"}, status=status.HTTP_400_BAD_REQUEST)
-    #     return Response({"status":"Deleted"}, status=200)
 
 
     def get_file(self, filename):

@@ -16,6 +16,7 @@ import sys
 import subprocess
 import getopt
 import shutil
+import time
 
 if __name__ == '__main__':
     if __package__ is None:
@@ -57,38 +58,39 @@ def main(argv):
     path_dst_abs = path + path_dst
     path_result_abs = path + path_result
 
-    path_src_ext = 'backend/storage/' + rid + '/ext/src'
-    path_dst_ext = 'backend/storage/' + rid + '/ext/dst'
+    path_src_ext = 'backend/storage/' + uid + '/' + rid + '/ext/src'
+    path_dst_ext = 'backend/storage/' + uid + '/' + rid + '/ext/dst'
 
-    path_src_ext_abs = path + 'backend/storage/' + rid + '/ext/src'
-    path_dst_ext_abs = path + 'backend/storage/' + rid + '/ext/dst'
+    path_src_ext_abs = path + 'backend/storage/' + uid + '/' + rid + '/ext/src'
+    path_dst_ext_abs = path + 'backend/storage/' + uid + '/' + rid + '/ext/dst'
 
     path_faceswap = path + 'backend/faceswap/faceswap.py'
     
-    path_model_abs = path + 'backend/models/' + rid +'/'
+    path_model_abs = path + 'backend/models/' + uid + '/' + rid +'/'
 
     path_remote = 'users/' + uid + '/' + rid + '/result/' + name
+    if not os.path.isdir('backend/models/' + uid + '/'):
+        os.mkdir('backend/models/' + uid + '/')
+    if not os.path.isdir('backend/models/' + uid + '/' + rid +'/'):
+        os.mkdir('backend/models/' + uid + '/' + rid +'/')
 
-    if not os.path.isdir('backend/models/' + rid +'/'):
-        os.mkdir('backend/models/' + rid +'/')
-
-    # Extract face
-    # python faceswap.py extract -i ~/faceswap/src/trump -o ~/faceswap/faces/trump
+    # # Extract face
+    # # python faceswap.py extract -i ~/faceswap/src/trump -o ~/faceswap/faces/trump
     
     os.system('python ' + path_faceswap + ' extract -i ' + path_src_abs + ' -o ' + path_src_ext_abs)
     os.system('python ' + path_faceswap + ' extract -i ' + path_dst_abs + ' -o ' + path_dst_ext_abs)
 
-    # Train
-    # python faceswap.py train -A ~/faceswap/faces/trump -B ~/faceswap/faces/cage -m ~/faceswap/trump_cage_model/
+    # # Train
+    # # python faceswap.py train -A ~/faceswap/faces/trump -B ~/faceswap/faces/cage -m ~/faceswap/trump_cage_model/
     
     os.system('python ' + path_faceswap + ' train -A ' + path_dst_ext_abs + ' -B ' + path_src_ext_abs + ' -m ' + path_model_abs)
     
-    # Convert
-    # python faceswap.py convert -i ~/faceswap/src/trump/ -o ~/faceswap/converted/ -m ~/faceswap/trump_cage_model/
+    # # Convert
+    # # python faceswap.py convert -i ~/faceswap/src/trump/ -o ~/faceswap/converted/ -m ~/faceswap/trump_cage_model/
     
     os.system('python ' + path_faceswap + ' convert -i ' + path_dst_abs + ' -o ' + path_result_abs + 'imgs/' + ' -m ' + path_model_abs)
     
-    # Generating a video
+    # # Generating a video
     os.system('ffmpeg -f image2 -i ' + path_result_abs + 'imgs/dst_%6d.png ' + path_result_abs + 'out.mp4')
 
 
@@ -97,6 +99,7 @@ def main(argv):
     if path_dst is not None and os.path.isfile(path_dst):
         os.remove(path_dst)
 
+    time.sleep(30)
 
     # Upload
     blob = bucket.blob(path_remote)
@@ -109,8 +112,8 @@ def main(argv):
         'status': 'done'
     })
 
-    shutil.rmtree('backend/storage/' + rid + '/') 
-    shutil.rmtree('backend/models/' + rid + '/') 
+    shutil.rmtree('backend/storage/' + uid + '/' + rid + '/') 
+    shutil.rmtree('backend/models/' + uid + '/' + rid + '/') 
     
 if __name__ == '__main__':
     main(sys.argv)

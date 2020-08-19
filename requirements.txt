@@ -3,17 +3,13 @@ djangorestframework==3.11.0
 django-storages[google]
 gunicorn==20.0.4
 
-numpy==1.18.3
-tqdm==4.45.0
+numpy==1.16.4
 seaborn
 matplotlib
 pandas==1.0.2
-torch 
-torchvision
 firebase-admin
 python-dotenv
 screen
-# nginx
 
 google-api-core==1.17.0
 google-cloud-bigquery==1.23.0

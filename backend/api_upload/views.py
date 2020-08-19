@@ -36,12 +36,6 @@ class FileUploadView(APIView):
     Upload a file to the server directly
     """
     def post(self, request):
-
-        # self.uid = str(request.GET.get('uid'))
-        # self.rid = str(request.GET.get('rid'))
-        # self.typ = str(request.GET.get('type'))
-        # self.name = str(request.GET.get('filename'))
-
         raw_data = request.body.decode('utf-8')
         data = json.loads(raw_data)
         self.uid = data['uid']
@@ -61,15 +55,9 @@ class FileUploadView(APIView):
             response = Response({"status":"Fail"}, status=400)
 
         if pred != "Safe":
-            # file = FileWrapper(open('backend/storage/' + self.rid + '/' + self.typ +'/nsfw.jpg', 'rb'))
-            # filename = 'nsfw.png'
-            # response = HttpResponse(file, content_type='image/png')
-            # response['Content-Disposition'] = 'attachment; filename=' + filename
             self.upload_file()
             shutil.rmtree('backend/storage/' + self.uid + '/' + self.rid + '/')
-            # return response
-        
-        # return Response({"status":"Porn"}, status=200)
+
         return Response({"status":pred}, status=200)
 
     def get_file(self):
